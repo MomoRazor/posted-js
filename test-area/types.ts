@@ -1,4 +1,4 @@
-import { ReadList } from '../src/types'
+import { EndpointInformationList, ReadList } from '../src/types'
 import { Entity } from './entities'
 
 export type ReadFunc =
@@ -89,3 +89,96 @@ export const writeList: ReadList<Entity, WriteFunc> = [
         dependencies: ['lending']
     }
 ] as const
+
+export type Endpoint =
+    | '/books'
+    | '/books/:id'
+    | '/users'
+    | '/users/:id'
+    | '/lendings'
+    | '/lendings/:id'
+    | '/lendings/:id/extend'
+    | '/lendings/:id/finish'
+
+export const endpointInfoList: EndpointInformationList<Endpoint, ReadFunc, WriteFunc> = [
+    {
+        endpoint: '/books',
+        method: 'GET',
+        function: 'getBooks'
+    },
+    {
+        endpoint: '/books/:id',
+        method: 'GET',
+        function: 'getBookById'
+    },
+    {
+        endpoint: '/users',
+        method: 'GET',
+        function: 'getUsers'
+    },
+    {
+        endpoint: '/users/:id',
+        method: 'GET',
+        function: 'getUserById'
+    },
+    {
+        endpoint: '/lendings',
+        method: 'GET',
+        function: 'getLendings'
+    },
+    {
+        endpoint: '/lendings/:id',
+        method: 'GET',
+        function: 'getLendingById'
+    },
+    {
+        endpoint: '/books',
+        method: 'POST',
+        function: 'createBook'
+    },
+    {
+        endpoint: '/users',
+        method: 'POST',
+        function: 'createUser'
+    },
+    {
+        endpoint: '/lendings',
+        method: 'POST',
+        function: 'createLending'
+    },
+    {
+        endpoint: '/books/:id',
+        method: 'PUT',
+        function: 'updateBook'
+    },
+    {
+        endpoint: '/users/:id',
+        method: 'PUT',
+        function: 'updateUser'
+    },
+    {
+        endpoint: '/lendings/:id/extend',
+        method: 'PUT',
+        function: 'extendLending'
+    },
+    {
+        endpoint: '/lendings/:id/finish',
+        method: 'PUT',
+        function: 'finishLending'
+    },
+    {
+        endpoint: '/books/:id',
+        method: 'DELETE',
+        function: 'deleteBook'
+    },
+    {
+        endpoint: '/users/:id',
+        method: 'DELETE',
+        function: 'deleteUser'
+    },
+    {
+        endpoint: '/lendings/:id',
+        method: 'DELETE',
+        function: 'deleteLending'
+    }
+]

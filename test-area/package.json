@@ -12,20 +12,22 @@
         "refresh-packages": "rm -rf node_modules && rm -rf package-lock.json && npm i"
     },
     "devDependencies": {
-        "@types/cors": "2.8.17",
-        "@types/dotenv": "8.2.0",
-        "@types/express": "4.17.21",
+        "@types/cors": "2.8.18",
+        "@types/dotenv": "8.2.3",
+        "@types/express": "5.0.2",
         "@types/morgan": "1.9.9",
+        "@types/uuid": "10.0.0",
         "nodemon": "3.1.10",
         "npm-check": "6.0.1",
-        "typescript": "5.8.3",
-        "ts-node": "10.9.2"
+        "ts-node": "10.9.2",
+        "typescript": "5.8.3"
     },
     "dependencies": {
         "cors": "2.8.5",
         "dotenv": "16.5.0",
         "express": "5.1.0",
         "mongoose": "8.15.1",
-        "morgan": "1.10.0"
+        "morgan": "1.10.0",
+        "uuid": "11.1.0"
     }
 }

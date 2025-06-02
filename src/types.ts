@@ -23,9 +23,18 @@ export type WriteList<
     WriteFunc extends string | number | symbol
 > = Write<Entity, WriteFunc>[]
 
-// export type WriteFactory<WriteFunc extends string | number | symbol> = {
-//     [name in WriteFunc]: Function
-// }
-// export type ReadFactory<ReadFunc extends string | number | symbol> = {
-//     [name in ReadFunc]: ()
-// }
+export interface EndpointInformation<
+    Endpoint extends string | number | symbol,
+    ReadFunc extends string | number | symbol,
+    WriteFunc extends string | number | symbol
+> {
+    endpoint: Endpoint
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE'
+    function: ReadFunc | WriteFunc
+}
+
+export type EndpointInformationList<
+    Endpoint extends string | number | symbol,
+    ReadFunc extends string | number | symbol,
+    WriteFunc extends string | number | symbol
+> = EndpointInformation<Endpoint, ReadFunc, WriteFunc>[]
