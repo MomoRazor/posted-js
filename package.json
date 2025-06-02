@@ -1,0 +1,23 @@
+{
+    "name": "postedjs",
+    "version": "0.0.1",
+    "description": "",
+    "main": "dist/index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "build": "tsc",
+        "check-packages": "npx npm-check -u -E",
+        "refresh-packages": "rm -rf node_modules && rm -rf package-lock.json && npm i"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "npm-check": "6.0.1",
+        "typescript": "5.8.3"
+    },
+    "dependencies": {
+        "@ucast/mongo2js": "^1.4.0",
+        "socket.io": "4.8.1"
+    }
+}

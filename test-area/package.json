@@ -1,0 +1,31 @@
+{
+    "name": "postedjs-test",
+    "version": "1.0.0",
+    "description": "",
+    "license": "ISC",
+    "author": "",
+    "main": "index.js",
+    "scripts": {
+        "dev": "nodemon ./index.ts",
+        "build": "tsc",
+        "check-packages": "npx npm-check -u -E",
+        "refresh-packages": "rm -rf node_modules && rm -rf package-lock.json && npm i"
+    },
+    "devDependencies": {
+        "@types/cors": "2.8.17",
+        "@types/dotenv": "8.2.0",
+        "@types/express": "4.17.21",
+        "@types/morgan": "1.9.9",
+        "nodemon": "3.1.10",
+        "npm-check": "6.0.1",
+        "typescript": "5.8.3",
+        "ts-node": "10.9.2"
+    },
+    "dependencies": {
+        "cors": "2.8.5",
+        "dotenv": "16.5.0",
+        "express": "5.1.0",
+        "mongoose": "8.15.1",
+        "morgan": "1.10.0"
+    }
+}

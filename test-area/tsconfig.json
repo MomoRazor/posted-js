@@ -1,0 +1,41 @@
+{
+    "compilerOptions": {
+        "target": "es2019",
+        "module": "commonjs",
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+
+        /* Strict Type-Checking Options */
+        "strict": true,
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "strictFunctionTypes": true,
+        "strictBindCallApply": true,
+        "strictPropertyInitialization": true,
+        "noImplicitThis": true,
+        "alwaysStrict": true,
+
+        /* Additional Checks */
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+
+        /* Node.js Module Resolution Options */
+        "moduleResolution": "node",
+        "rootDirs": ["src"],
+        "outDir": "./dist",
+
+        /* Source Map Options for debugging */
+        "sourceMap": true,
+
+        /* Additional Node.js Options */
+        "resolveJsonModule": true,
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+
+        "declaration": true
+    },
+    "include": ["/**/*.ts"],
+    "exclude": ["node_modules", "**/*.spec.ts", "./dist"]
+}
