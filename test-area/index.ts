@@ -1,11 +1,11 @@
 //This is test code, simulating a normal API
 
 import mongoose from 'mongoose'
-import express from 'express'
+import express, { Send } from 'express'
 import cors from 'cors'
 import http from 'http'
 import morgan from 'morgan'
-import { Posted } from '../src/main'
+import { Posted, headerIdKey, RequestData } from '../src'
 import { Book, User, Lending } from './entities'
 import { endpointInfoList, readList, writeList } from './types'
 import { config } from 'dotenv'
@@ -56,49 +56,63 @@ const main = async () => {
 
     const simpleService = {
         // READS with pagination and filtering
-        getBooks: ({
-            filter = {},
-            skip = 0,
-            limit = 20
-        }: { filter?: Partial<Book>; skip?: number; limit?: number } = {}) =>
-            BookModel.find(filter).skip(skip).limit(limit).exec(),
+        getBooks: ({ query = {} }: RequestData = {}) => {
+            const { filter = {}, skip = 0, limit = 20 } = query
+            return BookModel.find(filter).skip(Number(skip)).limit(Number(limit)).exec()
+        },
 
-        getUsers: ({
-            filter = {},
-            skip = 0,
-            limit = 20
-        }: { filter?: Partial<User>; skip?: number; limit?: number } = {}) =>
-            UserModel.find(filter).skip(skip).limit(limit).exec(),
+        getUsers: ({ query = {} }: RequestData = {}) => {
+            const { filter = {}, skip = 0, limit = 20 } = query
+            return UserModel.find(filter).skip(Number(skip)).limit(Number(limit)).exec()
+        },
 
-        getLendings: ({
-            filter = {},
-            skip = 0,
-            limit = 20
-        }: { filter?: Partial<Lending>; skip?: number; limit?: number } = {}) =>
-            LendingModel.find(filter).skip(skip).limit(limit).exec(),
+        getLendings: ({ query = {} }: RequestData = {}) => {
+            const { filter = {}, skip = 0, limit = 20 } = query
+            return LendingModel.find(filter).skip(Number(skip)).limit(Number(limit)).exec()
+        },
 
-        getBookById: (id: string) => BookModel.findById(id).exec(),
-        getUserById: (id: string) => UserModel.findById(id).exec(),
-        getLendingById: (id: string) => LendingModel.findById(id).exec(),
+        getBookById: ({ params = {} }: RequestData = {}) => BookModel.findById(params.id).exec(),
 
-        // WRITES (unchanged)
-        createBook: (data: Omit<Book, 'id'>) => BookModel.create(data),
-        createUser: (data: Omit<User, 'id'>) => UserModel.create(data),
-        createLending: (data: Omit<Lending, 'id'>) => LendingModel.create(data),
+        getUserById: ({ params = {} }: RequestData = {}) => UserModel.findById(params.id).exec(),
 
-        updateBook: (id: string, data: Partial<Book>) =>
-            BookModel.findByIdAndUpdate(id, data, { new: true }).exec(),
-        updateUser: (id: string, data: Partial<User>) =>
-            UserModel.findByIdAndUpdate(id, data, { new: true }).exec(),
+        getLendingById: ({ params = {} }: RequestData = {}) =>
+            LendingModel.findById(params.id).exec(),
 
-        extendLending: (id: string, endDate: Date) =>
-            LendingModel.findByIdAndUpdate(id, { endDate }, { new: true }).exec(),
-        finishLending: (id: string, actualEndDate: Date) =>
-            LendingModel.findByIdAndUpdate(id, { actualEndDate }, { new: true }).exec(),
+        // WRITES
+        createBook: ({ body = {} }: RequestData = {}) => BookModel.create(body),
 
-        deleteBook: (id: string) => BookModel.findByIdAndDelete(id).exec(),
-        deleteUser: (id: string) => UserModel.findByIdAndDelete(id).exec(),
-        deleteLending: (id: string) => LendingModel.findByIdAndDelete(id).exec()
+        createUser: ({ body = {} }: RequestData = {}) => UserModel.create(body),
+
+        createLending: ({ body = {} }: RequestData = {}) => LendingModel.create(body),
+
+        updateBook: ({ params = {}, body = {} }: RequestData = {}) =>
+            BookModel.findByIdAndUpdate(params.id, body, { new: true }).exec(),
+
+        updateUser: ({ params = {}, body = {} }: RequestData = {}) =>
+            UserModel.findByIdAndUpdate(params.id, body, { new: true }).exec(),
+
+        extendLending: ({ params = {}, body = {} }: RequestData = {}) =>
+            LendingModel.findByIdAndUpdate(
+                params.id,
+                { endDate: new Date(body.endDate) },
+                { new: true }
+            ).exec(),
+
+        finishLending: ({ params = {}, body = {} }: RequestData = {}) =>
+            LendingModel.findByIdAndUpdate(
+                params.id,
+                { actualEndDate: new Date(body.actualEndDate) },
+                { new: true }
+            ).exec(),
+
+        deleteBook: ({ params = {} }: RequestData = {}) =>
+            BookModel.findByIdAndDelete(params.id).exec(),
+
+        deleteUser: ({ params = {} }: RequestData = {}) =>
+            UserModel.findByIdAndDelete(params.id).exec(),
+
+        deleteLending: ({ params = {} }: RequestData = {}) =>
+            LendingModel.findByIdAndDelete(params.id).exec()
     }
 
     const app = express()
@@ -118,113 +132,132 @@ const main = async () => {
         }
     })
 
-    app.use((req, _, next) => {
+    //TODO this needs to be consolidated within the package
+    // Middleware to intercept res.send
+    app.use((req, res, next) => {
+        if (!res.locals.currentListenerId) {
+            next()
+        } else {
+            //TODO to implement both sending id when reading (for future updates)
+            // and emitting socket options when writing - this requires writing event detection logic
+            const originalSend = res.send.bind(res)
+
+            res.send = function (body?: any): any {
+                // You can inspect or modify 'body' here
+                console.info(`Response for ${req.method} ${req.originalUrl}:`, body)
+
+                // Optionally, modify the body before sending
+                // body = { ...body, intercepted: true };
+
+                return originalSend(body)
+            }
+
+            next()
+        }
+    })
+
+    //TODO this needs to be consolidated within the package
+    app.use((req, res, next) => {
         console.info(`Request received: ${req.method} ${req.originalUrl}`)
+
+        const id = req.headers[headerIdKey] as string | undefined
         const result = posted.handleUrl({
+            id,
             url: req.originalUrl,
-            method: req.method as 'GET' | 'POST' | 'PUT' | 'DELETE'
+            method: req.method as 'GET' | 'POST' | 'PUT' | 'DELETE',
+            requestData: {
+                query: req.query,
+                body: req.body,
+                params: req.params
+            }
         })
 
-        console.log('res', result)
+        res.locals.currentListenerId = result?.listener?.id
+        res.locals.updateCall = result?.updateCall
+
         next()
     })
 
+    // Books
     app.get('/books', async (req, res) => {
-        const { skip = 0, limit = 20, ...filter } = req.query
-        const books = await simpleService.getBooks({
-            filter,
-            skip: Number(skip),
-            limit: Number(limit)
-        })
+        const books = await simpleService.getBooks({ query: req.query })
         res.json(books)
     })
 
     app.get('/books/:id', async (req, res) => {
-        const book = await simpleService.getBookById(req.params.id)
+        const book = await simpleService.getBookById({ params: req.params })
         res.json(book)
     })
 
     app.post('/books', async (req, res) => {
-        const book = await simpleService.createBook(req.body)
+        const book = await simpleService.createBook({ body: req.body })
         res.json(book)
     })
 
     app.put('/books/:id', async (req, res) => {
-        const book = await simpleService.updateBook(req.params.id, req.body)
+        const book = await simpleService.updateBook({ params: req.params, body: req.body })
         res.json(book)
     })
 
     app.delete('/books/:id', async (req, res) => {
-        const result = await simpleService.deleteBook(req.params.id)
+        const result = await simpleService.deleteBook({ params: req.params })
         res.json(result)
     })
 
     // Users
     app.get('/users', async (req, res) => {
-        const { skip = 0, limit = 20, ...filter } = req.query
-        const users = await simpleService.getUsers({
-            filter,
-            skip: Number(skip),
-            limit: Number(limit)
-        })
+        const users = await simpleService.getUsers({ query: req.query })
         res.json(users)
     })
 
     app.get('/users/:id', async (req, res) => {
-        const user = await simpleService.getUserById(req.params.id)
+        const user = await simpleService.getUserById({ params: req.params })
         res.json(user)
     })
 
     app.post('/users', async (req, res) => {
-        const user = await simpleService.createUser(req.body)
+        const user = await simpleService.createUser({ body: req.body })
         res.json(user)
     })
 
     app.put('/users/:id', async (req, res) => {
-        const user = await simpleService.updateUser(req.params.id, req.body)
+        const user = await simpleService.updateUser({ params: req.params, body: req.body })
         res.json(user)
     })
 
     app.delete('/users/:id', async (req, res) => {
-        const result = await simpleService.deleteUser(req.params.id)
+        const result = await simpleService.deleteUser({ params: req.params })
         res.json(result)
     })
 
     // Lendings
     app.get('/lendings', async (req, res) => {
-        const { skip = 0, limit = 20, ...filter } = req.query
-        const lendings = await simpleService.getLendings({
-            filter,
-            skip: Number(skip),
-            limit: Number(limit)
-        })
+        const lendings = await simpleService.getLendings({ query: req.query })
         res.json(lendings)
     })
 
     app.get('/lendings/:id', async (req, res) => {
-        const lending = await simpleService.getLendingById(req.params.id)
+        const lending = await simpleService.getLendingById({ params: req.params })
         res.json(lending)
     })
 
     app.post('/lendings', async (req, res) => {
-        const lending = await simpleService.createLending(req.body)
+        const lending = await simpleService.createLending({ body: req.body })
         res.json(lending)
     })
 
     app.put('/lendings/:id/extend', async (req, res) => {
-        const { endDate } = req.body
-        const lending = await simpleService.extendLending(req.params.id, new Date(endDate))
+        const lending = await simpleService.extendLending({ params: req.params, body: req.body })
         res.json(lending)
     })
 
     app.put('/lendings/:id/finish', async (req, res) => {
-        const { actualEndDate } = req.body
-        const lending = await simpleService.finishLending(req.params.id, new Date(actualEndDate))
+        const lending = await simpleService.finishLending({ params: req.params, body: req.body })
         res.json(lending)
     })
 
     app.delete('/lendings/:id', async (req, res) => {
-        const result = await simpleService.deleteLending(req.params.id)
+        const result = await simpleService.deleteLending({ params: req.params })
         res.json(result)
     })
 

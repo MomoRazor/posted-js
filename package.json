@@ -14,10 +14,14 @@
     "license": "ISC",
     "devDependencies": {
         "npm-check": "6.0.1",
-        "typescript": "5.8.3"
+        "typescript": "5.8.3",
+        "@types/uuid": "10.0.0",
+        "@types/luxon": "3.6.2"
     },
     "dependencies": {
-        "@ucast/mongo2js": "^1.4.0",
-        "socket.io": "4.8.1"
+        "@ucast/mongo2js": "1.4.0",
+        "socket.io": "4.8.1",
+        "uuid": "11.1.0",
+        "luxon": "3.6.1"
     }
 }

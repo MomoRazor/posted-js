@@ -1,5 +1,16 @@
-import { EndpointInformationList, ReadList, WriteList } from './types'
+import { Server } from 'socket.io'
+import {
+    EndpointInformationList,
+    Listener,
+    ListenerList,
+    ReadList,
+    RequestData,
+    UpdateCall,
+    WriteList
+} from './types'
 import http from 'http'
+import { v4 } from 'uuid'
+import { DateTime } from 'luxon'
 
 export class Posted<
     Entity extends string | number | symbol,
@@ -12,7 +23,8 @@ export class Posted<
 
     private _endpointInfoList: EndpointInformationList<Endpoint, ReadFunc, WriteFunc> = []
 
-    // private _socket: Server | null = null
+    private _listenerList: ListenerList<Entity, ReadFunc> = []
+    private _socket: Server | null = null
 
     constructor(args: {
         httpServer: http.Server
@@ -27,18 +39,48 @@ export class Posted<
         this._readList = args.config.readList
         this._endpointInfoList = args.config.endpointInfoList
 
-        //TODO to remove
-        // this._socket = new Server(args.httpServer, {
-        //     cors: {
-        //         origin: '*',
-        //         methods: ['GET'],
-        //         allowedHeaders: ['Content-Type'],
-        //         credentials: !args.config.development
-        //     },
-        //     transports: ['websocket']
-        // })
+        this._socket = new Server(args.httpServer, {
+            cors: {
+                origin: '*',
+                methods: ['GET'],
+                allowedHeaders: ['Content-Type'],
+                credentials: !args.config.development
+            },
+            transports: ['websocket']
+        })
+    }
 
-        // console.log(this._socket)
+    upsertListener(args: {
+        id?: string
+        name: ReadFunc
+        requestData: RequestData | undefined
+        dependencies?: Entity[]
+    }): Listener<Entity, ReadFunc> {
+        const { id, name, requestData, dependencies } = args
+        if (!name) {
+            throw new Error('Name is required for listener')
+        }
+
+        let listener: Listener<Entity, ReadFunc> | undefined
+        if (id) {
+            listener = this._listenerList.find((item) => item.id === id)
+
+            if (listener) {
+                listener.name = name
+                listener.requestData = requestData
+                listener.dependencies = dependencies
+                listener.lastUsed = DateTime.now()
+
+                return listener
+            } else {
+                console.info('Listener with id:', id, 'not found, creating new one')
+            }
+        }
+
+        listener = { id: v4(), name, requestData, lastUsed: DateTime.now(), dependencies }
+        this._listenerList.push(listener)
+
+        return listener
     }
 
     detectCall(args: { name: WriteFunc | ReadFunc }) {
@@ -63,8 +105,13 @@ export class Posted<
         return
     }
 
-    handleUrl(args: { url: string; method: 'GET' | 'POST' | 'PUT' | 'DELETE' }) {
-        const { url, method } = args
+    handleUrl(args: {
+        id: string | undefined
+        url: string
+        method: 'GET' | 'POST' | 'PUT' | 'DELETE'
+        requestData: RequestData | undefined
+    }) {
+        const { id, url, method, requestData } = args
 
         let newUrl: URL
         try {
@@ -112,6 +159,46 @@ export class Posted<
             return
         }
 
-        return this.detectCall({ name: functionName })
+        const call = this.detectCall({ name: functionName })
+
+        if (!call) {
+            console.info('No call found for function:', functionName)
+            return
+        }
+
+        // If the call is a write operation, we don't need to return a listener
+        if (call?.type === 'write') {
+            this.deleteExpiredListeners()
+            const updateCall: UpdateCall<Entity, WriteFunc> = {
+                dependants: call.dependants
+            }
+            return {
+                updateCall
+            }
+        } else {
+            const listener = this.upsertListener({
+                id,
+                name: functionName as ReadFunc,
+                requestData,
+                dependencies: call.dependencies
+            })
+            this.deleteExpiredListeners()
+            return {
+                listener
+            }
+        }
+    }
+
+    // listened idle for over 5 minutes will be deleted
+    deleteExpiredListeners() {
+        const now = DateTime.now()
+        this._listenerList = this._listenerList.filter((listener) => {
+            const diff = now.diff(listener.lastUsed, 'minutes').minutes
+            if (diff > 5) {
+                console.info('Deleting expired listener:', listener.id)
+                return false
+            }
+            return true
+        })
     }
 }

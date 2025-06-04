@@ -1,6 +1,9 @@
+import { QueryOptions } from '@ucast/mongo2js'
+import { DateTime } from 'luxon'
+
 export interface Read<
     Entity extends string | number | symbol,
-    ReadFunc extends string | number | symbol = Entity
+    ReadFunc extends string | number | symbol
 > {
     name: ReadFunc
     dependencies?: Entity[]
@@ -8,7 +11,7 @@ export interface Read<
 
 export interface Write<
     Entity extends string | number | symbol,
-    WriteFunc extends string | number | symbol = Entity
+    WriteFunc extends string | number | symbol
 > {
     name: WriteFunc
     dependants?: Entity[]
@@ -38,3 +41,37 @@ export type EndpointInformationList<
     ReadFunc extends string | number | symbol,
     WriteFunc extends string | number | symbol
 > = EndpointInformation<Endpoint, ReadFunc, WriteFunc>[]
+
+export interface RequestData {
+    query?: Record<string, any>
+    body?: Record<string, any>
+    params?: Record<string, any>
+}
+
+export interface Listener<
+    Entity extends string | number | symbol,
+    ReadFunc extends string | number | symbol
+> {
+    id: string
+    name: ReadFunc
+    requestData: RequestData | undefined
+    lastUsed: DateTime
+    dependencies?: Entity[]
+    dependencyOptimization?: {
+        [key in Entity]?: QueryOptions
+    }
+}
+
+export type ListenerList<
+    Entity extends string | number | symbol,
+    ReadFunc extends string | number | symbol
+> = Listener<Entity, ReadFunc>[]
+
+export interface UpdateCall<
+    Entity extends string | number | symbol,
+    WriteFunc extends string | number | symbol
+> extends Omit<Write<Entity, WriteFunc>, 'name'> {
+    dependantOptimization?: {
+        [key in Entity]?: QueryOptions
+    }
+}
