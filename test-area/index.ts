@@ -1,7 +1,7 @@
 //This is test code, simulating a normal API
 
 import mongoose from 'mongoose'
-import express, { Send } from 'express'
+import express from 'express'
 import cors from 'cors'
 import http from 'http'
 import morgan from 'morgan'
@@ -128,35 +128,12 @@ const main = async () => {
             endpointInfoList,
             writeList,
             readList,
-            development: true // Set to false in production
+            development: true, // Set to false in production,
+            readFactory: simpleService
         }
     })
 
-    //TODO this needs to be consolidated within the package
-    // Middleware to intercept res.send
-    app.use((req, res, next) => {
-        if (!res.locals.currentListenerId) {
-            next()
-        } else {
-            //TODO to implement both sending id when reading (for future updates)
-            // and emitting socket options when writing - this requires writing event detection logic
-            const originalSend = res.send.bind(res)
-
-            res.send = function (body?: any): any {
-                // You can inspect or modify 'body' here
-                console.info(`Response for ${req.method} ${req.originalUrl}:`, body)
-
-                // Optionally, modify the body before sending
-                // body = { ...body, intercepted: true };
-
-                return originalSend(body)
-            }
-
-            next()
-        }
-    })
-
-    //TODO this needs to be consolidated within the package
+    //TODO this needs to be consolidated within the express package
     app.use((req, res, next) => {
         console.info(`Request received: ${req.method} ${req.originalUrl}`)
 
@@ -176,6 +153,34 @@ const main = async () => {
         res.locals.updateCall = result?.updateCall
 
         next()
+    })
+
+    //TODO this needs to be consolidated within the express package
+    // Middleware to intercept res.send
+    app.use((_, res, next) => {
+        if (!res.locals.currentListenerId || !res.locals.updateCall) {
+            next()
+        } else if(res.locals.currentListenerId){
+            const originalSend = res.send.bind(res)
+
+            res.send = (body) => {
+                const listenerId = res.locals.currentListenerId
+
+                // Optionally, modify the body before sending
+                // body = { ...body, intercepted: true };
+
+                return originalSend({
+                    body,
+                    listenerId,
+                })
+            }
+
+            next()
+        }else if(res.locals.updateCall){
+            //TODO run update check call
+
+            next()
+        }
     })
 
     // Books

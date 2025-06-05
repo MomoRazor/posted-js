@@ -3,6 +3,8 @@ import {
     EndpointInformationList,
     Listener,
     ListenerList,
+    Optimization,
+    ReadFactory,
     ReadList,
     RequestData,
     UpdateCall,
@@ -11,7 +13,9 @@ import {
 import http from 'http'
 import { v4 } from 'uuid'
 import { DateTime } from 'luxon'
+import { guard } from '@ucast/mongo2js'
 
+//TODO maybe some debouncing for updates can be implemented in case of multiple updates in a short time span
 export class Posted<
     Entity extends string | number | symbol,
     ReadFunc extends string | number | symbol,
@@ -22,6 +26,7 @@ export class Posted<
     private _readList: ReadList<Entity, ReadFunc> = []
 
     private _endpointInfoList: EndpointInformationList<Endpoint, ReadFunc, WriteFunc> = []
+    private _readFactory: ReadFactory<ReadFunc>
 
     private _listenerList: ListenerList<Entity, ReadFunc> = []
     private _socket: Server | null = null
@@ -32,12 +37,14 @@ export class Posted<
             writeList: WriteList<Entity, WriteFunc>
             readList: ReadList<Entity, ReadFunc>
             endpointInfoList: EndpointInformationList<Endpoint, ReadFunc, WriteFunc>
+            readFactory: ReadFactory<ReadFunc>
             development?: boolean
         }
     }) {
         this._writeList = args.config.writeList
         this._readList = args.config.readList
         this._endpointInfoList = args.config.endpointInfoList
+        this._readFactory = args.config.readFactory
 
         this._socket = new Server(args.httpServer, {
             cors: {
@@ -79,6 +86,8 @@ export class Posted<
 
         listener = { id: v4(), name, requestData, lastUsed: DateTime.now(), dependencies }
         this._listenerList.push(listener)
+
+        console.log('listener list', this._listenerList)
 
         return listener
     }
@@ -170,7 +179,8 @@ export class Posted<
         if (call?.type === 'write') {
             this.deleteExpiredListeners()
             const updateCall: UpdateCall<Entity, WriteFunc> = {
-                dependants: call.dependants
+                dependants: call.dependants,
+                name: functionName as WriteFunc
             }
             return {
                 updateCall
@@ -187,6 +197,127 @@ export class Posted<
                 listener
             }
         }
+    }
+
+    addListenerOptimization(args: {
+        listenerId: string
+        dependencyOptimization: Optimization<Entity>
+    }) {
+        const { listenerId, dependencyOptimization } = args
+        const listener = this._listenerList.find((item) => item.id === listenerId)
+
+        if (!listener) {
+            console.error('Listener not found for id:', listenerId)
+            return
+        }
+
+        listener.dependencyOptimization = dependencyOptimization
+        listener.lastUsed = DateTime.now()
+    }
+
+    async triggerUpdates(args: { call: UpdateCall<Entity, WriteFunc> }) {
+        const { call } = args
+
+        if (!this._socket) {
+            console.error('Socket.io server is not initialized')
+            return
+        }
+
+        if (!call.dependants || call.dependants.length == 0) {
+            return
+        }
+
+        await Promise.all(
+            this._listenerList.map(async (listener) => {
+                if (!listener.dependencies || listener.dependencies.length == 0) {
+                    return
+                }
+
+                const intersection = listener.dependencies.filter((dep) =>
+                    call.dependants!.includes(dep)
+                )
+
+                if (intersection.length === 0) {
+                    return
+                }
+
+                const runChange = async () => {
+                    const data = this._readFactory[listener.name](listener.requestData)
+
+                    try {
+                        await this._socket!.timeout(2000).emitWithAck(listener.id, {
+                            data
+                        })
+
+                        listener.lastUsed = DateTime.now()
+                    } catch (e) {
+                        console.error('Error emitting data for listener:', listener.id, e)
+                        //remove listener if it fails to emit
+                        this._listenerList = this._listenerList.filter(
+                            (item) => item.id !== listener.id
+                        )
+                    }
+                }
+
+                if (!listener.dependencyOptimization) {
+                    console.warn(
+                        'Listeners for the following function do not have dependency optimization:',
+                        listener.name
+                    )
+
+                    await runChange()
+                } else {
+                    if (!call.dependantOptimization) {
+                        console.warn(
+                            'No dependant optimization provided for update function:',
+                            call.name
+                        )
+
+                        await runChange()
+                    } else {
+                        let complexIntersection = false
+                        for (let j = 0; j < intersection.length; j++) {
+                            if (!listener.dependencyOptimization[intersection[j]]) {
+                                console.warn(
+                                    'No dependency optimization found for intersection:',
+                                    intersection[j],
+                                    'in listener:',
+                                    listener.name
+                                )
+                                continue
+                            }
+
+                            if (!call.dependantOptimization[intersection[j]]) {
+                                console.warn(
+                                    'No dependant optimization found for intersection:',
+                                    intersection[j],
+                                    'in call:',
+                                    call.name
+                                )
+                                continue
+                            }
+                            const query = guard(listener.dependencyOptimization[intersection[j]]!)
+
+                            if (query(call.dependantOptimization[intersection[j]]!)) {
+                                complexIntersection = true
+                                break
+                            }
+                        }
+
+                        if (complexIntersection) {
+                            await runChange()
+                        } else {
+                            console.info(
+                                'No changes detected for listener:',
+                                listener.name,
+                                'with dependencies:',
+                                intersection
+                            )
+                        }
+                    }
+                }
+            })
+        )
     }
 
     // listened idle for over 5 minutes will be deleted

@@ -1,4 +1,4 @@
-import { QueryOptions } from '@ucast/mongo2js'
+import { MongoQuery } from '@ucast/mongo2js'
 import { DateTime } from 'luxon'
 
 export interface Read<
@@ -48,6 +48,10 @@ export interface RequestData {
     params?: Record<string, any>
 }
 
+export type Optimization<Entity extends string | number | symbol> = {
+    [key in Entity]?: MongoQuery
+}
+
 export interface Listener<
     Entity extends string | number | symbol,
     ReadFunc extends string | number | symbol
@@ -57,9 +61,7 @@ export interface Listener<
     requestData: RequestData | undefined
     lastUsed: DateTime
     dependencies?: Entity[]
-    dependencyOptimization?: {
-        [key in Entity]?: QueryOptions
-    }
+    dependencyOptimization?: Optimization<Entity>
 }
 
 export type ListenerList<
@@ -70,8 +72,12 @@ export type ListenerList<
 export interface UpdateCall<
     Entity extends string | number | symbol,
     WriteFunc extends string | number | symbol
-> extends Omit<Write<Entity, WriteFunc>, 'name'> {
+> extends Write<Entity, WriteFunc> {
     dependantOptimization?: {
-        [key in Entity]?: QueryOptions
+        [key in Entity]?: Record<string, unknown>
     }
+}
+
+export type ReadFactory<ReadFunc extends string | number | symbol> = {
+    [name in ReadFunc]: (requestData: RequestData | undefined) => Promise<unknown>
 }
