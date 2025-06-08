@@ -1,0 +1,11 @@
+{
+  "name": "@postedjs/util",
+  "version": "0.0.1",
+  "scripts": {
+    "build": "tsc",
+    "publish-build": "tsc -p ./tsconfig.publish.json"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3"
+  }
+}

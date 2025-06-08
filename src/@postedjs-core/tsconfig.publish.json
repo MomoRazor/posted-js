@@ -3,7 +3,6 @@
         "target": "esnext",
         "esModuleInterop": true,
         "forceConsistentCasingInFileNames": true,
-
         /* Strict Type-Checking Options */
         "strict": true,
         "noImplicitAny": true,
@@ -13,35 +12,27 @@
         "strictPropertyInitialization": true,
         "noImplicitThis": true,
         "alwaysStrict": true,
-
         /* Additional Checks */
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noImplicitReturns": true,
         "noFallthroughCasesInSwitch": true,
-
         /* Node.js Module Resolution Options */
         "moduleResolution": "node",
-        "rootDirs": ["src"],
-        "outDir": "./dist",
-
+        "outDir": "dist",
         /* Source Map Options for debugging */
         "sourceMap": true,
-
         /* Additional Node.js Options */
         "resolveJsonModule": true,
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
-
-        "declaration": true,
-
-        "baseUrl": ".",
-        "paths": {
-            "@postedjs/util": ["./src/@postedjs-util"],
-            "@postedjs/core": ["./src/@postedjs-core"],
-            "@postedjs/client": ["./src/@postedjs-client"]
-        }
+        "lib": ["dom", "esnext"],
+        "allowJs": true,
+        "skipLibCheck": true,
+        "incremental": true,
+        "isolatedModules": true,
+        "jsx": "preserve",
+        "composite": true
     },
-    "include": ["src/**/*.ts", "test-area/**/*.ts", "test-area/**/*.js"],
-    "exclude": ["node_modules", "**/*.spec.ts", "./dist"]
+    "exclude": ["dist", "node_modules"]
 }

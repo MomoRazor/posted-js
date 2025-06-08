@@ -1,6 +1,6 @@
 import { UpdateCall } from '../src'
-import { WriteFunc } from './types'
-import { Entity } from './entities'
+import { WriteFunc } from './test-area/types'
+import { Entity } from './test-area/entities'
 
 //typing express Locals
 export namespace Express {

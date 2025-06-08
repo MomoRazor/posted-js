@@ -14,6 +14,7 @@ import http from 'http'
 import { v4 } from 'uuid'
 import { DateTime } from 'luxon'
 import { guard } from '@ucast/mongo2js'
+import { SocketData } from '@postedjs/util'
 
 //TODO maybe some debouncing for updates can be implemented in case of multiple updates in a short time span
 export class Posted<
@@ -245,9 +246,11 @@ export class Posted<
                     const data = this._readFactory[listener.name](listener.requestData)
 
                     try {
-                        await this._socket!.timeout(2000).emitWithAck(listener.id, {
+                        const socketData: SocketData = {
                             data
-                        })
+                        }
+
+                        await this._socket!.timeout(2000).emitWithAck(listener.id, socketData)
 
                         listener.lastUsed = DateTime.now()
                     } catch (e) {

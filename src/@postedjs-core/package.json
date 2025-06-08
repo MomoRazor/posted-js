@@ -1,0 +1,20 @@
+{
+  "name": "@postedjs/core",
+  "version": "0.0.1",
+  "scripts": {
+    "build": "tsc",
+    "publish-build": "tsc -p ./tsconfig.publish.json"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3",
+    "@types/uuid": "10.0.0",
+    "@types/luxon": "3.6.2"
+  },
+  "dependencies": {
+    "@postedjs/util": "0.0.1",
+    "@ucast/mongo2js": "1.4.0",
+    "socket.io": "4.8.1",
+    "uuid": "11.1.0",
+    "luxon": "3.6.1"
+  }
+}

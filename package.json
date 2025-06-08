@@ -4,10 +4,15 @@
     "description": "",
     "main": "dist/index.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
+        "start:express": "nodemon ./test-area/express/index.ts",
+        "start:client": "npx serve ./test-area/client -p 3000",
         "build": "tsc",
+        "test": "echo \"Error: no test specified\" && exit 1",
         "check-packages": "npx npm-check -u -E",
-        "refresh-packages": "rm -rf node_modules && rm -rf package-lock.json && npm i"
+        "refresh-packages": "rm -rf node_modules && rm -rf package-lock.json && npm i",
+        "generate-packages": "node ./scripts/generatePackages.js && cd src && cd @postedjs-util && npm link && cd ../@postedjs-core && npm link && cd ../@postedjs-client && npm link && cd ../../",
+        "link-packages": "npm link @postedjs/util @postedjs/core @postedjs/client",
+        "setup": "npm run generate-packages && npm run link-packages"
     },
     "keywords": [],
     "author": "",
@@ -16,12 +21,23 @@
         "npm-check": "6.0.1",
         "typescript": "5.8.3",
         "@types/uuid": "10.0.0",
-        "@types/luxon": "3.6.2"
+        "@types/luxon": "3.6.2",
+        "@types/cors": "2.8.18",
+        "@types/express": "5.0.2",
+        "@types/morgan": "1.9.9",
+        "nodemon": "3.1.10",
+        "ts-node": "10.9.2"
     },
     "dependencies": {
         "@ucast/mongo2js": "1.4.0",
         "socket.io": "4.8.1",
+        "socket.io-client": "4.8.1",
         "uuid": "11.1.0",
-        "luxon": "3.6.1"
+        "luxon": "3.6.1",
+        "cors": "2.8.5",
+        "dotenv": "16.5.0",
+        "express": "5.1.0",
+        "mongoose": "8.15.1",
+        "morgan": "1.10.0"
     }
 }

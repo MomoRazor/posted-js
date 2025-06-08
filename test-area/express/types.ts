@@ -1,4 +1,5 @@
-import { EndpointInformationList, ReadList } from '../src/types'
+//TODO might need to switch all these to express package at some point
+import { EndpointInformationList, ReadList } from '@postedjs/core'
 import { Entity } from './entities'
 
 export type ReadFunc =

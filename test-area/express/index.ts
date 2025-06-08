@@ -5,7 +5,8 @@ import express from 'express'
 import cors from 'cors'
 import http from 'http'
 import morgan from 'morgan'
-import { Posted, headerIdKey, RequestData } from '../src'
+//TODO might need to switch all these to express package at some point
+import { Posted, headerIdKey, RequestData, PostedJsReadReturn } from '@postedjs/core'
 import { Book, User, Lending } from './entities'
 import { endpointInfoList, readList, writeList } from './types'
 import { config } from 'dotenv'
@@ -160,23 +161,22 @@ const main = async () => {
     app.use((_, res, next) => {
         if (!res.locals.currentListenerId || !res.locals.updateCall) {
             next()
-        } else if(res.locals.currentListenerId){
+        } else if (res.locals.currentListenerId) {
             const originalSend = res.send.bind(res)
 
             res.send = (body) => {
                 const listenerId = res.locals.currentListenerId
 
-                // Optionally, modify the body before sending
-                // body = { ...body, intercepted: true };
+                const parsedReturn: PostedJsReadReturn = {
+                    id: listenerId,
+                    data: body
+                }
 
-                return originalSend({
-                    body,
-                    listenerId,
-                })
+                return originalSend(parsedReturn)
             }
 
             next()
-        }else if(res.locals.updateCall){
+        } else if (res.locals.updateCall) {
             //TODO run update check call
 
             next()

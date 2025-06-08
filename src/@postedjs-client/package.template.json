@@ -1,0 +1,17 @@
+{
+    "name": "@postedjs/client",
+    "version": "$DYNAMIC$",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "publish-build": "tsc -p ./tsconfig.publish.json"
+    },
+    "devDependencies": {
+        "typescript": ""
+    },
+    "dependencies": {
+        "@postedjs/util": "$DYNAMIC$",
+        "socket.io-client": ""
+    }
+}

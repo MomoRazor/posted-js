@@ -1,0 +1,22 @@
+{
+    "name": "@postedjs/core",
+    "version": "$DYNAMIC$",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "publish-build": "tsc -p ./tsconfig.publish.json"
+    },
+    "devDependencies": {
+        "typescript": "",
+        "@types/uuid": "",
+        "@types/luxon": ""
+    },
+    "dependencies": {
+        "@postedjs/util": "$DYNAMIC$",
+        "@ucast/mongo2js": "",
+        "socket.io": "",
+        "uuid": "",
+        "luxon": ""
+    }
+}
